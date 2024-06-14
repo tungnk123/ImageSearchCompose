@@ -5,3 +5,4 @@ data class ImageEntity(
     val imageUrl: String,
     val sourceUrl: String
 )
+
