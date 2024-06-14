@@ -1,4 +1,12 @@
 package com.tungdoan.imagesearchcompose
 
-class ImageSearchComposeApplication {
+import android.app.Application
+
+class ImageSearchComposeApplication: Application() {
+    private lateinit var container: AppContainer
+
+    override fun onCreate() {
+        super.onCreate()
+        container = AppContainer()
+    }
 }
