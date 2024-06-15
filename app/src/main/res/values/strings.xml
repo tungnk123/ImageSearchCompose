@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">ImageSearchCompose</string>
+    <string name="image_search_screen_route">image_search</string>
+    <string name="detail_image_screen_route">detail_image</string>
+
+    <string name="title_search_text_field">Search image by text</string>
+    <string name="title_empty_image">No image available</string>
+    <string name="btn_see_page_source">SEE PAGE SOURCE</string>
+    <string name="btn_search">SEARCH</string>
+
+
+
 </resources>
