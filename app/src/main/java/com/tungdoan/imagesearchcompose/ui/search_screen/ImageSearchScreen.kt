@@ -1,18 +1,16 @@
 package com.tungdoan.imagesearchcompose.ui.search_screen
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -23,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,17 +46,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.tungdoan.imagesearchcompose.R
 import com.tungdoan.imagesearchcompose.model.ImageEntity
 
 @Composable
 fun ImageSearchScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    imagesViewModel: ImagesViewModel
 ) {
     val context = LocalContext.current
     var queryText by remember {
         mutableStateOf("")
     }
+    val uiState = imagesViewModel.uiState.collectAsState()
     val imageList = remember { mutableStateListOf<ImageEntity>() }
     Scaffold(
         modifier = modifier
@@ -77,21 +80,37 @@ fun ImageSearchScreen(
                     imageList.clear()
                 },
                 onSearchClick = {
-//                    Toast.makeText(context, "Search clicked", Toast.LENGTH_LONG).show()
-                    imageList.add(
-                        ImageEntity(
-                            id = 0,
-                            imageUrl = "",
-                            sourceUrl = ""
-                        )
-                    )
+                    imagesViewModel.getImagesByQuery(queryText, 1)
+
                 }
             )
             Spacer(modifier = Modifier.height(20.dp))
 
-            GridImages(
-                imageList = imageList
-            )
+            if (uiState.value.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (uiState.value.error != null) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = uiState.value.error ?: "Unknown error",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                GridImages(
+                    imageList = uiState.value.imageList
+                )
+            }
+
         }
     }
 }
@@ -165,8 +184,8 @@ fun GridImages(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(imageList) { item ->
-                Image(
-                    painter = painterResource(R.drawable.lion),
+                AsyncImage(
+                    model = item.imageUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

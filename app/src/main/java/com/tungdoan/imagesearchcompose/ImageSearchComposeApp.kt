@@ -11,9 +11,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.tungdoan.imagesearchcompose.ui.theme.ImageSearchComposeTheme
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.tungdoan.imagesearchcompose.ui.search_screen.ImageSearchScreen
+import com.tungdoan.imagesearchcompose.ui.search_screen.ImagesViewModel
 
 enum class ImageSearchComposeApp(@StringRes val title: Int) {
     SearchScreen(title = R.string.image_search_screen_route),
@@ -24,6 +27,7 @@ enum class ImageSearchComposeApp(@StringRes val title: Int) {
 fun ImageSearchComposeApp(
     navControler: NavHostController = rememberNavController()
 ) {
+    val imagesViewModel: ImagesViewModel = viewModel(factory = ImagesViewModel.factory)
     ImageSearchComposeTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -38,7 +42,9 @@ fun ImageSearchComposeApp(
                     composable(
                         route = ImageSearchComposeApp.SearchScreen.name
                     ) {
-                        ImageSearchScreen()
+                        ImageSearchScreen(
+                            imagesViewModel = imagesViewModel
+                        )
                     }
 
 

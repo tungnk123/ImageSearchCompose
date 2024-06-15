@@ -14,3 +14,12 @@ data class ImageDto(
     val googleUrl: String,
     val position: Int
 )
+
+
+fun ImageDto.toEntity(): ImageEntity {
+    return ImageEntity(
+        id = this.position,
+        imageUrl = this.imageUrl,
+        sourceUrl = this.link
+    )
+}
