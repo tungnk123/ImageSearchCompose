@@ -163,7 +163,6 @@ fun GridImages(
     imageUiState: ImageUiState,
     loadNextPage: () -> Unit
 ) {
-
     if (imageUiState.imageList.isNotEmpty()) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),

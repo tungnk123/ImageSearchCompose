@@ -1,5 +1,6 @@
 package com.tungdoan.imagesearchcompose
 
+import com.google.gson.internal.GsonBuildConfig
 import com.tungdoan.imagesearchcompose.data.ImagesDataSource
 import com.tungdoan.imagesearchcompose.data.ImagesRepository
 import com.tungdoan.imagesearchcompose.network.ImagesApiService
@@ -11,10 +12,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class AppContainer {
 
+    private val apiKey = BuildConfig.API_KEY
     private val apiKeyInterceptor = Interceptor { chain ->
         val original: Request = chain.request()
         val request: Request = original.newBuilder()
-            .header("X-API-KEY", "75daaee8a0904abda9a47fdfd7ada21979159f61")
+            .header("X-API-KEY", apiKey)
             .header("Content-Type", "application/json")
             .build()
         chain.proceed(request)
