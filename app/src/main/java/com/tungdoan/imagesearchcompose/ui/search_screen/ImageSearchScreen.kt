@@ -50,6 +50,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import coil.ImageLoader
 import coil.compose.AsyncImage
 import com.tungdoan.imagesearchcompose.R
 import com.tungdoan.imagesearchcompose.model.ImageEntity
@@ -183,7 +184,8 @@ fun GridImages(
                         .clip(
                         shape = RoundedCornerShape(20.dp)
                     ),
-                    placeholder = painterResource(R.drawable.img_place_holder)
+                    placeholder = painterResource(R.drawable.img_place_holder),
+                    error = painterResource(R.drawable.img_image_error)
                 )
             }
             if (imageUiState.isLoading) {
