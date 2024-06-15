@@ -31,20 +31,35 @@ class ImagesViewModel(
     private val _uiState = MutableStateFlow(ImageUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun getImagesByQuery(
-        query: String,
-        page: Int,
-    ) {
+    private var currentPage = 1
+    private var isLastPage = false
+
+    // Fetches images based on the given query and page number
+    fun getImagesByQuery(query: String, page: Int = 1, append: Boolean = false) {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val imageDtos = imagesRepository.getImagesByQuery(query, page = page)
                 Log.d("Api Response", imageDtos.toString())
                 val imageEntities = imageDtos.map { it.toEntity() }
-                _uiState.value = _uiState.value.copy(imageList = imageEntities, isLoading = false)
+
+                // Update UI state with the fetched images and indicate loading is complete
+                _uiState.value = _uiState.value.copy(
+                    imageList = if (append) _uiState.value.imageList + imageEntities else imageEntities,
+                    isLoading = false
+                )
+                currentPage = page
+                isLastPage = imageEntities.isEmpty()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
             }
+        }
+    }
+
+    // Loads the next page of images based on the given query
+    fun loadNextPage(query: String) {
+        if (!isLastPage && !_uiState.value.isLoading) {
+            getImagesByQuery(query, currentPage + 1, append = true)
         }
     }
 

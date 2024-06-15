@@ -10,7 +10,7 @@ interface ImagesApiService {
     @POST("/images")
     suspend fun getImages(
         @Query("q") query: String,
-        @Query("num") num: Int = 10,
+        @Query("num") num: Int = 20,
         @Query("page") page: Int,
     ): ImagesResponse
 }

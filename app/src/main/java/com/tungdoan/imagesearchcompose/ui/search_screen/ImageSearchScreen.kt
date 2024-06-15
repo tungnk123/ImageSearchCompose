@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -30,12 +32,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.tungdoan.imagesearchcompose.R
 import com.tungdoan.imagesearchcompose.model.ImageEntity
+import kotlinx.coroutines.flow.filter
 
 @Composable
 fun ImageSearchScreen(
@@ -60,6 +65,7 @@ fun ImageSearchScreen(
         mutableStateOf("")
     }
     val uiState = imagesViewModel.uiState.collectAsState()
+    val lazyGridState = rememberLazyGridState()
     val imageList = remember { mutableStateListOf<ImageEntity>() }
     Scaffold(
         modifier = modifier
@@ -86,30 +92,11 @@ fun ImageSearchScreen(
             )
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (uiState.value.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.value.error != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = uiState.value.error ?: "Unknown error",
-                        color = Color.Red,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            } else {
-                GridImages(
-                    imageList = uiState.value.imageList
-                )
-            }
+            GridImages(
+                state = lazyGridState,
+                imageUiState = uiState.value,
+                loadNextPage = { imagesViewModel.loadNextPage(queryText) }
+            )
 
         }
     }
@@ -171,10 +158,12 @@ fun SearchTextField(
 @Composable
 fun GridImages(
     modifier: Modifier = Modifier,
-    imageList: List<ImageEntity>
+    state: LazyGridState,
+    imageUiState: ImageUiState,
+    loadNextPage: () -> Unit
 ) {
-    val state = rememberLazyGridState()
-    if (imageList.isNotEmpty()) {
+
+    if (imageUiState.imageList.isNotEmpty()) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             state = state,
@@ -183,7 +172,8 @@ fun GridImages(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(imageList) { item ->
+
+            items(imageUiState.imageList) { item ->
                 AsyncImage(
                     model = item.imageUrl,
                     contentDescription = null,
@@ -192,8 +182,52 @@ fun GridImages(
                         .aspectRatio(1.0f)
                         .clip(
                         shape = RoundedCornerShape(20.dp)
-                    )
+                    ),
+                    placeholder = painterResource(R.drawable.img_place_holder)
                 )
+            }
+            if (imageUiState.isLoading) {
+                item(
+                    span = {
+                        GridItemSpan(2)
+                    }
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+            if (imageUiState.error != null) {
+                item(
+                    span = {
+                        GridItemSpan(2)
+                    }
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = imageUiState.error ?: "Unknown error",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+            }
+            // Use LaunchedEffect to trigger loading of the next page when reaching the end of the list
+            item {
+                LaunchedEffect(state) {
+                    snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+                        .filter { it == imageUiState.imageList.lastIndex }
+                        .collect { loadNextPage() }
+                }
+
+
             }
         }
     }
