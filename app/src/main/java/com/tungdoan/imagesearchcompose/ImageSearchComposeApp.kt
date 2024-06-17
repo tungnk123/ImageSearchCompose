@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.tungdoan.imagesearchcompose.ui.theme.ImageSearchComposeTheme
@@ -15,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.tungdoan.imagesearchcompose.ui.detail_image_screen.ImageDetailScreen
 import com.tungdoan.imagesearchcompose.ui.search_screen.ImageSearchScreen
 import com.tungdoan.imagesearchcompose.ui.search_screen.ImagesViewModel
 
@@ -43,7 +45,19 @@ fun ImageSearchComposeApp(
                         route = ImageSearchComposeApp.SearchScreen.name
                     ) {
                         ImageSearchScreen(
-                            imagesViewModel = imagesViewModel
+                            imagesViewModel = imagesViewModel,
+                            navController = navControler
+                        )
+                    }
+
+                    composable(
+                        route = "${ImageSearchComposeApp.DetailImageScreen.name}/{index}"
+                    ) {navBackStackEntry ->
+                        val index = navBackStackEntry.arguments?.getString("index")?.toInt() ?: 0
+                        ImageDetailScreen(
+                            imagesViewModel = imagesViewModel,
+                            startIndex = index,
+                            navController = navControler
                         )
                     }
 

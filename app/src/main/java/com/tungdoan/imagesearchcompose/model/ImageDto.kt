@@ -1,5 +1,7 @@
 package com.tungdoan.imagesearchcompose.model
 
+import com.tungdoan.imagesearchcompose.utils.Constants
+
 data class ImageDto(
     val title: String,
     val imageUrl: String,
@@ -16,9 +18,9 @@ data class ImageDto(
 )
 
 
-fun ImageDto.toEntity(): ImageEntity {
+fun ImageDto.toEntity(currentPage: Int): ImageEntity {
     return ImageEntity(
-        id = this.position,
+        id = this.position + (currentPage - 1) * Constants.PAGE_SIZE,
         imageUrl = this.imageUrl,
         sourceUrl = this.link
     )

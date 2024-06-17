@@ -41,7 +41,7 @@ class ImagesViewModel(
             try {
                 val imageDtos = imagesRepository.getImagesByQuery(query, page = page)
                 Log.d("Api Response", imageDtos.toString())
-                val imageEntities = imageDtos.map { it.toEntity() }
+                val imageEntities = imageDtos.map { it.toEntity(page) }
 
                 // Update UI state with the fetched images and indicate loading is complete
                 _uiState.value = _uiState.value.copy(

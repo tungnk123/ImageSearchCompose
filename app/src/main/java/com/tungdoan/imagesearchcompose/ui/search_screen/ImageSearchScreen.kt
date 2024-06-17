@@ -1,7 +1,9 @@
 package com.tungdoan.imagesearchcompose.ui.search_screen
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,8 +52,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import coil.ImageLoader
 import coil.compose.AsyncImage
+import com.tungdoan.imagesearchcompose.ImageSearchComposeApp
 import com.tungdoan.imagesearchcompose.R
 import com.tungdoan.imagesearchcompose.model.ImageEntity
 import kotlinx.coroutines.flow.filter
@@ -59,7 +63,8 @@ import kotlinx.coroutines.flow.filter
 @Composable
 fun ImageSearchScreen(
     modifier: Modifier = Modifier,
-    imagesViewModel: ImagesViewModel
+    imagesViewModel: ImagesViewModel,
+    navController: NavHostController
 ) {
     val context = LocalContext.current
     var queryText by remember {
@@ -96,7 +101,11 @@ fun ImageSearchScreen(
             GridImages(
                 state = lazyGridState,
                 imageUiState = uiState.value,
-                loadNextPage = { imagesViewModel.loadNextPage(queryText) }
+                loadNextPage = { imagesViewModel.loadNextPage(queryText) },
+                onImageClick = {
+//                    Toast.makeText(context, "Image id: $it clicked", Toast.LENGTH_LONG).show()
+                    navController.navigate("${ImageSearchComposeApp.DetailImageScreen.name}/$it")
+                }
             )
 
         }
@@ -161,7 +170,8 @@ fun GridImages(
     modifier: Modifier = Modifier,
     state: LazyGridState,
     imageUiState: ImageUiState,
-    loadNextPage: () -> Unit
+    loadNextPage: () -> Unit,
+    onImageClick: (Int) -> Unit
 ) {
     if (imageUiState.imageList.isNotEmpty()) {
         LazyVerticalGrid(
@@ -182,7 +192,10 @@ fun GridImages(
                         .aspectRatio(1.0f)
                         .clip(
                         shape = RoundedCornerShape(20.dp)
-                    ),
+                    )
+                        .clickable {
+                                   onImageClick(item.id - 1)
+                        },
                     placeholder = painterResource(R.drawable.img_place_holder),
                     error = painterResource(R.drawable.img_image_error)
                 )
