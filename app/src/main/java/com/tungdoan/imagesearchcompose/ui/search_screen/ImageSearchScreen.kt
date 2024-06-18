@@ -1,7 +1,15 @@
 package com.tungdoan.imagesearchcompose.ui.search_screen
 
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +43,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,28 +53,32 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.tungdoan.imagesearchcompose.ImageSearchComposeApp
 import com.tungdoan.imagesearchcompose.R
-import com.tungdoan.imagesearchcompose.model.ImageEntity
 import kotlinx.coroutines.flow.filter
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ImageSearchScreen(
+fun SharedTransitionScope.ImageSearchScreen(
     modifier: Modifier = Modifier,
-    imagesViewModel: ImagesViewModel
+    imagesViewModel: ImagesViewModel,
+    navController: NavHostController,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val context = LocalContext.current
-    var queryText by remember {
-        mutableStateOf("")
-    }
+
     val uiState = imagesViewModel.uiState.collectAsState()
+    var queryText by remember {
+        mutableStateOf(uiState.value.query)
+    }
     val lazyGridState = rememberLazyGridState()
-    val imageList = remember { mutableStateListOf<ImageEntity>() }
     Scaffold(
         modifier = modifier
     ) { paddingValues ->
@@ -77,18 +88,18 @@ fun ImageSearchScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             SearchTextField(
                 queryText = queryText,
                 onQueryChange = {
+                    imagesViewModel.updateQuery(it)
                     queryText = it
                 },
                 onDeleteClick = {
                     queryText = ""
-                    imageList.clear()
                 },
                 onSearchClick = {
                     imagesViewModel.getImagesByQuery(queryText, 1)
-
                 }
             )
             Spacer(modifier = Modifier.height(20.dp))
@@ -96,9 +107,15 @@ fun ImageSearchScreen(
             GridImages(
                 state = lazyGridState,
                 imageUiState = uiState.value,
-                loadNextPage = { imagesViewModel.loadNextPage(queryText) }
+                loadNextPage = {
+                    imagesViewModel.loadNextPage(queryText)
+                },
+                onImageClick = {
+//                    Toast.makeText(context, "Image id: $it clicked", Toast.LENGTH_LONG).show()
+                    navController.navigate("${ImageSearchComposeApp.DetailImageScreen.name}/$it")
+                },
+                animatedVisibilityScope = animatedVisibilityScope
             )
-
         }
     }
 }
@@ -111,6 +128,7 @@ fun SearchTextField(
     onDeleteClick: () -> Unit,
     onSearchClick: () -> Unit
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
     TextField(
         modifier = Modifier.fillMaxWidth(),
         value = queryText,
@@ -151,17 +169,23 @@ fun SearchTextField(
             imeAction = ImeAction.Search
         ),
         keyboardActions = KeyboardActions(
-            onSearch = { onSearchClick() }
+            onSearch = {
+                onSearchClick()
+                keyboardController?.hide()
+            }
         )
     )
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun GridImages(
+fun SharedTransitionScope.GridImages(
     modifier: Modifier = Modifier,
     state: LazyGridState,
     imageUiState: ImageUiState,
-    loadNextPage: () -> Unit
+    loadNextPage: () -> Unit,
+    onImageClick: (Int) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     if (imageUiState.imageList.isNotEmpty()) {
         LazyVerticalGrid(
@@ -179,12 +203,22 @@ fun GridImages(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
+                        .sharedElement(
+                            state = rememberSharedContentState(key = "image/${item.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 1000)
+                            }
+                        )
                         .aspectRatio(1.0f)
                         .clip(
                         shape = RoundedCornerShape(20.dp)
-                    ),
+                    )
+                        .clickable {
+                                   onImageClick(item.id - 1)
+                        },
                     placeholder = painterResource(R.drawable.img_place_holder),
-                    error = painterResource(R.drawable.img_image_error)
+                    error = painterResource(R.drawable.img_image_error),
                 )
             }
             if (imageUiState.isLoading) {
@@ -215,7 +249,9 @@ fun GridImages(
                             text = imageUiState.error ?: "Unknown error",
                             color = Color.Red,
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(16.dp).clickable {
+                                loadNextPage()
+                            }
                         )
                     }
                 }
@@ -227,7 +263,6 @@ fun GridImages(
                         .filter { it == imageUiState.imageList.lastIndex }
                         .collect { loadNextPage() }
                 }
-
 
             }
         }

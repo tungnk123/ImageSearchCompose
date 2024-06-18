@@ -22,7 +22,8 @@ import okhttp3.RequestBody
 data class ImageUiState(
     val imageList: List<ImageEntity> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val query: String = ""
 )
 class ImagesViewModel(
     private val imagesRepository: ImagesRepository
@@ -41,7 +42,7 @@ class ImagesViewModel(
             try {
                 val imageDtos = imagesRepository.getImagesByQuery(query, page = page)
                 Log.d("Api Response", imageDtos.toString())
-                val imageEntities = imageDtos.map { it.toEntity() }
+                val imageEntities = imageDtos.map { it.toEntity(page) }
 
                 // Update UI state with the fetched images and indicate loading is complete
                 _uiState.value = _uiState.value.copy(
@@ -51,6 +52,7 @@ class ImagesViewModel(
                 currentPage = page
                 isLastPage = imageEntities.isEmpty()
             } catch (e: Exception) {
+                Log.d("HTTP 400", e.message!!)
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
             }
         }
@@ -63,6 +65,10 @@ class ImagesViewModel(
         }
     }
 
+
+    fun updateQuery(query: String) {
+        _uiState.value = _uiState.value.copy(query = query)
+    }
     companion object {
         val factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

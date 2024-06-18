@@ -8,6 +8,8 @@
     <string name="btn_see_page_source">SEE PAGE SOURCE</string>
     <string name="btn_search">SEARCH</string>
 
+    <string name="title_image_detail">Image detail</string>
+
 
 
 </resources>
