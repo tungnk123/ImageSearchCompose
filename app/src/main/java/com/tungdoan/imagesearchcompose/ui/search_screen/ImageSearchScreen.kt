@@ -37,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,16 +47,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import coil.ImageLoader
 import coil.compose.AsyncImage
 import com.tungdoan.imagesearchcompose.ImageSearchComposeApp
 import com.tungdoan.imagesearchcompose.R
-import com.tungdoan.imagesearchcompose.model.ImageEntity
 import kotlinx.coroutines.flow.filter
 
 @Composable
@@ -67,12 +65,18 @@ fun ImageSearchScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
-    var queryText by remember {
-        mutableStateOf("")
-    }
+
     val uiState = imagesViewModel.uiState.collectAsState()
+    var queryText by remember {
+        mutableStateOf(uiState.value.query)
+    }
     val lazyGridState = rememberLazyGridState()
-    val imageList = remember { mutableStateListOf<ImageEntity>() }
+//    val imageList = remember { mutableStateListOf<ImageEntity>() }
+//
+//    LaunchedEffect(uiState) {
+//        imageList.clear()
+//        imageList.addAll(uiState.value.imageList)
+//    }
     Scaffold(
         modifier = modifier
     ) { paddingValues ->
@@ -85,15 +89,14 @@ fun ImageSearchScreen(
             SearchTextField(
                 queryText = queryText,
                 onQueryChange = {
+                    imagesViewModel.updateQuery(it)
                     queryText = it
                 },
                 onDeleteClick = {
                     queryText = ""
-                    imageList.clear()
                 },
                 onSearchClick = {
                     imagesViewModel.getImagesByQuery(queryText, 1)
-
                 }
             )
             Spacer(modifier = Modifier.height(20.dp))
@@ -101,13 +104,15 @@ fun ImageSearchScreen(
             GridImages(
                 state = lazyGridState,
                 imageUiState = uiState.value,
-                loadNextPage = { imagesViewModel.loadNextPage(queryText) },
+                loadNextPage = {
+                    Toast.makeText(context, "Load page", Toast.LENGTH_LONG).show()
+                    imagesViewModel.loadNextPage(queryText)
+                },
                 onImageClick = {
 //                    Toast.makeText(context, "Image id: $it clicked", Toast.LENGTH_LONG).show()
                     navController.navigate("${ImageSearchComposeApp.DetailImageScreen.name}/$it")
                 }
             )
-
         }
     }
 }
@@ -120,6 +125,7 @@ fun SearchTextField(
     onDeleteClick: () -> Unit,
     onSearchClick: () -> Unit
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
     TextField(
         modifier = Modifier.fillMaxWidth(),
         value = queryText,
@@ -160,7 +166,10 @@ fun SearchTextField(
             imeAction = ImeAction.Search
         ),
         keyboardActions = KeyboardActions(
-            onSearch = { onSearchClick() }
+            onSearch = {
+                onSearchClick()
+                keyboardController?.hide()
+            }
         )
     )
 }
@@ -228,7 +237,9 @@ fun GridImages(
                             text = imageUiState.error ?: "Unknown error",
                             color = Color.Red,
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(16.dp).clickable {
+                                loadNextPage()
+                            }
                         )
                     }
                 }
@@ -240,7 +251,6 @@ fun GridImages(
                         .filter { it == imageUiState.imageList.lastIndex }
                         .collect { loadNextPage() }
                 }
-
 
             }
         }
