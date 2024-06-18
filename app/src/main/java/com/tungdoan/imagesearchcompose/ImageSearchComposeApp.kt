@@ -1,6 +1,8 @@
 package com.tungdoan.imagesearchcompose
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +27,7 @@ enum class ImageSearchComposeApp(@StringRes val title: Int) {
     DetailImageScreen(title = R.string.detail_image_screen_route)
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ImageSearchComposeApp(
     navControler: NavHostController = rememberNavController()
@@ -35,18 +38,18 @@ fun ImageSearchComposeApp(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            Scaffold {paddingValues ->
+            SharedTransitionLayout {
                 NavHost(
                     navController = navControler,
                     startDestination = ImageSearchComposeApp.SearchScreen.name,
-                    modifier = Modifier.padding(paddingValues)
                 ) {
                     composable(
                         route = ImageSearchComposeApp.SearchScreen.name
                     ) {
                         ImageSearchScreen(
                             imagesViewModel = imagesViewModel,
-                            navController = navControler
+                            navController = navControler,
+                            animatedVisibilityScope = this
                         )
                     }
 
@@ -57,7 +60,8 @@ fun ImageSearchComposeApp(
                         ImageDetailScreen(
                             imagesViewModel = imagesViewModel,
                             startIndex = index,
-                            navController = navControler
+                            navController = navControler,
+                            animatedVisibilityScope = this
                         )
                     }
 

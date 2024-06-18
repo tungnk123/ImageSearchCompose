@@ -1,6 +1,12 @@
 package com.tungdoan.imagesearchcompose.ui.search_screen
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -58,11 +64,13 @@ import com.tungdoan.imagesearchcompose.ImageSearchComposeApp
 import com.tungdoan.imagesearchcompose.R
 import kotlinx.coroutines.flow.filter
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ImageSearchScreen(
+fun SharedTransitionScope.ImageSearchScreen(
     modifier: Modifier = Modifier,
     imagesViewModel: ImagesViewModel,
-    navController: NavHostController
+    navController: NavHostController,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val context = LocalContext.current
 
@@ -71,12 +79,6 @@ fun ImageSearchScreen(
         mutableStateOf(uiState.value.query)
     }
     val lazyGridState = rememberLazyGridState()
-//    val imageList = remember { mutableStateListOf<ImageEntity>() }
-//
-//    LaunchedEffect(uiState) {
-//        imageList.clear()
-//        imageList.addAll(uiState.value.imageList)
-//    }
     Scaffold(
         modifier = modifier
     ) { paddingValues ->
@@ -86,6 +88,7 @@ fun ImageSearchScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             SearchTextField(
                 queryText = queryText,
                 onQueryChange = {
@@ -105,13 +108,13 @@ fun ImageSearchScreen(
                 state = lazyGridState,
                 imageUiState = uiState.value,
                 loadNextPage = {
-                    Toast.makeText(context, "Load page", Toast.LENGTH_LONG).show()
                     imagesViewModel.loadNextPage(queryText)
                 },
                 onImageClick = {
 //                    Toast.makeText(context, "Image id: $it clicked", Toast.LENGTH_LONG).show()
                     navController.navigate("${ImageSearchComposeApp.DetailImageScreen.name}/$it")
-                }
+                },
+                animatedVisibilityScope = animatedVisibilityScope
             )
         }
     }
@@ -174,13 +177,15 @@ fun SearchTextField(
     )
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun GridImages(
+fun SharedTransitionScope.GridImages(
     modifier: Modifier = Modifier,
     state: LazyGridState,
     imageUiState: ImageUiState,
     loadNextPage: () -> Unit,
-    onImageClick: (Int) -> Unit
+    onImageClick: (Int) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     if (imageUiState.imageList.isNotEmpty()) {
         LazyVerticalGrid(
@@ -198,6 +203,13 @@ fun GridImages(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
+                        .sharedElement(
+                            state = rememberSharedContentState(key = "image/${item.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 1000)
+                            }
+                        )
                         .aspectRatio(1.0f)
                         .clip(
                         shape = RoundedCornerShape(20.dp)
@@ -206,7 +218,7 @@ fun GridImages(
                                    onImageClick(item.id - 1)
                         },
                     placeholder = painterResource(R.drawable.img_place_holder),
-                    error = painterResource(R.drawable.img_image_error)
+                    error = painterResource(R.drawable.img_image_error),
                 )
             }
             if (imageUiState.isLoading) {

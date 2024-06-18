@@ -2,6 +2,10 @@ package com.tungdoan.imagesearchcompose.ui.detail_image_screen
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -30,24 +34,23 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.tungdoan.imagesearchcompose.ImageSearchComposeApp
 import com.tungdoan.imagesearchcompose.R
 import com.tungdoan.imagesearchcompose.ui.search_screen.ImagesViewModel
-import com.tungdoan.imagesearchcompose.ui.theme.ImageSearchComposeTheme
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
-fun ImageDetailScreen(
+fun SharedTransitionScope.ImageDetailScreen(
     modifier: Modifier = Modifier,
     imagesViewModel: ImagesViewModel,
     startIndex: Int,
-    navController: NavHostController
+    navController: NavHostController,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val imagesList = imagesViewModel.uiState.collectAsState().value.imageList
     val pagerState = rememberPagerState(initialPage = startIndex) {
@@ -102,7 +105,14 @@ fun ImageDetailScreen(
                             model = imagesList[page].imageUrl,
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.sharedElement(
+                                state = rememberSharedContentState(key = "image/${imagesList[page].id}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 1000)
+                                }
+                            )
+                                .fillMaxSize(),
                             placeholder = painterResource(R.drawable.img_place_holder),
                             error = painterResource(R.drawable.img_image_error)
                         )
@@ -130,18 +140,5 @@ fun ImageDetailScreen(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewImageDetailScreen() {
-    val imagesViewModel: ImagesViewModel = viewModel(factory = ImagesViewModel.factory)
-    ImageSearchComposeTheme {
-        ImageDetailScreen(
-            imagesViewModel = imagesViewModel,
-            startIndex = 0,
-            navController = rememberNavController()
-        )
     }
 }
